@@ -4,32 +4,25 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR....
-      # Check AWS CLI version
       - aws --version
-      # Log in to Amazon ECR
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 058264347147.dkr.ecr.us-east-1.amazonaws.com
-      # Define repository URI and image tag
       - REPOSITORY_URI=058264347147.dkr.ecr.us-east-1.amazonaws.com/iitk-proj-awsdevops
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
   build:
     commands:
       - echo Build started on date
       - echo Building the JAR file...
-      # Build the Java project using Maven
       - mvn clean install
       - echo Building the Docker image...
-      # Build and tag Docker image
       - docker build -t $REPOSITORY_URI:latest .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on date
       - echo Pushing the Docker image to ECR...
-      # Push Docker images to ECR
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      # Define container name and create imagedefinitions.json for ECS
       - DOCKER_CONTAINER_NAME=springboot-app
       - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - echo $DOCKER_CONTAINER_NAME
@@ -40,13 +33,3 @@ artifacts:
   files:
     - imagedefinitions.json
     - target/springboot-aws-deploy.jar
-```[cite: 2]
-
----
-
-### **Key Configuration Values**
-* **Account ID:** `058264347147`
-* **ECR Registry Host:** `058264347147.dkr.ecr.us-east-1.amazonaws.com`
-* **Repository Name:** `iitk-proj-awsdevops`[cite: 2]
-* **Full Image URI:** `[058264347147.dkr.ecr.us-east-1.amazonaws.com/iitk-proj-awsdevops](https://058264347147.dkr.ecr.us-east-1.amazonaws.com/iitk-proj-awsdevops)`
-* **ECS Container Name:** `springboot-app`[cite: 2]
